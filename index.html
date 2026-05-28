@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OPS Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'Inter',sans-serif;background:#f5f0e8;color:#1a1a1a;}
+.app{display:flex;height:100vh;overflow:hidden;}
+/* SIDEBAR */
+.sb{width:214px;min-width:214px;background:#1a1a1a;display:flex;flex-direction:column;overflow:hidden;transition:width .22s;flex-shrink:0;}
+.sb.col{width:54px;min-width:54px;}
+.sb-logo{padding:18px 14px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px;overflow:hidden;}
+.lm{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff;flex-shrink:0;}
+.lt{font-size:.88rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;}
+.sb.col .lt{display:none;}
+.ss{padding:14px 10px 5px;font-size:.6rem;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.2);text-transform:uppercase;white-space:nowrap;overflow:hidden;}
+.sb.col .ss{opacity:0;}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:2px 6px;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:500;color:#888;transition:all .14s;border:none;background:none;text-align:left;width:calc(100% - 12px);white-space:nowrap;overflow:hidden;}
+.ni:hover{background:rgba(255,255,255,.07);color:#fff;}
+.ni.act{background:rgba(255,255,255,.13);color:#fff;}
+.ni-ic{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ni-lb{white-space:nowrap;overflow:hidden;}
+.sb.col .ni-lb,.sb.col .ss{display:none;}
+.sf{margin-top:auto;padding:10px 6px;}
+.tgl{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:500;color:#888;background:none;border:none;width:100%;text-align:left;transition:all .14s;}
+.tgl:hover{background:rgba(255,255,255,.07);color:#fff;}
+.sb.col .tgl .ni-lb{display:none;}
+/* MAIN */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0;}
+.topbar{background:#fff;border-bottom:1px solid #e8e2d6;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:50;}
+.tb-l h1{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:#1a1a1a;line-height:1;}
+.tb-l p{font-size:.7rem;color:#aaa;margin-top:2px;font-weight:500;}
+.tb-r{display:flex;align-items:center;gap:12px;}
+.clk{font-size:.95rem;font-weight:700;color:#1a1a1a;text-align:right;}
+.dts{font-size:.66rem;color:#aaa;margin-top:1px;}
+.av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:#fff;flex-shrink:0;}
+/* PAGES */
+.pg{display:none;padding:20px 24px;}
+.pg.act{display:block;}
+.sec-t{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:#1a1a1a;margin-bottom:3px;}
+.sec-s{font-size:.76rem;color:#aaa;margin-bottom:18px;}
+/* CARDS */
+.card{background:#fff;border:1px solid #e8e2d6;border-radius:14px;padding:18px 20px;box-shadow:0 1px 8px rgba(0,0,0,.05);}
+.ct{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;color:#1a1a1a;margin-bottom:12px;}
+/* GREETING */
+.gr-strip{background:#1a1a1a;color:#fff;border-radius:14px;padding:20px 24px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:relative;overflow:hidden;}
+.gr-strip::before{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(139,92,246,.12);pointer-events:none;}
+.gr-l h2{font-family:'Syne',sans-serif;font-size:1.45rem;font-weight:800;line-height:1.15;}
+.gr-l p{font-size:.75rem;color:rgba(255,255,255,.45);margin-top:4px;}
+.wb{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 13px;font-size:.72rem;font-weight:600;color:rgba(255,255,255,.7);}
+/* QUOTE */
+.qcard{background:#f9f6ff;border:1px solid rgba(139,92,246,.14);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:11px;}
+.qbar{width:3px;min-height:34px;border-radius:2px;background:linear-gradient(180deg,#8b5cf6,#ec4899);flex-shrink:0;}
+.qt{font-size:.8rem;font-style:italic;color:#555;line-height:1.6;}
+.qa{font-size:.68rem;color:#aaa;margin-top:2px;font-weight:600;}
+/* KPI TILES */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px;}
+.kpit{background:#fff;border:1px solid #e8e2d6;border-radius:10px;padding:13px 15px;box-shadow:0 1px 5px rgba(0,0,0,.04);}
+.kl{font-size:.64rem;color:#aaa;text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+.kv{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;line-height:1.1;margin:3px 0;}
+.ks{font-size:.68rem;color:#aaa;}
+.kb{height:3px;border-radius:2px;background:#eee;margin-top:7px;overflow:hidden;}
+.kbf{height:100%;border-radius:2px;}
+/* DONUT WRAPPER */
+.dw{display:grid;grid-template-columns:1fr 280px;gap:14px;margin-bottom:14px;align-items:start;}
+.dcrd{background:#fff;border:1px solid #e8e2d6;border-radius:14px;padding:17px 19px;box-shadow:0 1px 8px rgba(0,0,0,.05);}
+.dt2{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.vt{display:flex;gap:5px;}
+.vb{padding:5px 11px;border-radius:20px;border:1px solid #e8e2d6;background:transparent;font-size:.7rem;font-weight:600;color:#999;cursor:pointer;transition:all .13s;font-family:'Inter',sans-serif;}
+.vb.act{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.ca{position:relative;width:156px;height:156px;margin:0 auto;}
+.cc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.cp{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:#1a1a1a;}
+.cl2{font-size:.63rem;color:#aaa;margin-top:1px;}
+.pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px;}
+.pill{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;border:1.5px solid transparent;font-size:.68rem;font-weight:600;cursor:pointer;transition:all .13s;background:transparent;font-family:'Inter',sans-serif;}
+.pdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.sst{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px;}
+.ss2{background:#f5f0e8;border:1px solid #e8e2d6;border-radius:8px;padding:9px 11px;}
+.sl2{font-size:.6rem;color:#aaa;text-transform:uppercase;letter-spacing:.4px;font-weight:600;}
+.sv{font-size:1rem;font-weight:700;color:#1a1a1a;}
+/* EOW */
+.eow-crd{background:#fff;border:1px solid #e8e2d6;border-radius:14px;padding:17px 19px;box-shadow:0 1px 8px rgba(0,0,0,.05);}
+.eg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px;}
+.eb{border-radius:8px;padding:10px 12px;}
+.eb h4{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+.eb ul{list-style:none;padding:0;}
+.eb li{font-size:.72rem;line-height:1.6;padding-left:10px;position:relative;}
+.eb li::before{content:'-';position:absolute;left:0;color:#aaa;}
+/* PRIORITIES */
+.prilist{display:flex;flex-direction:column;gap:7px;}
+.pri{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:8px;background:#f5f0e8;border:1px solid #e8e2d6;font-size:.78rem;}
+.pdot2{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.pl{font-weight:500;flex:1;}
+.pbadge{font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+/* METRIC GRID */
+.mg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+.mbox{background:#fff;border:1px solid #e8e2d6;border-radius:13px;padding:15px;box-shadow:0 1px 5px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:8px;}
+.mt2{display:flex;align-items:center;justify-content:space-between;}
+.mcb{width:4px;height:30px;border-radius:3px;flex-shrink:0;}
+.mn{font-size:.7rem;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:.3px;line-height:1.3;}
+.msr{display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;}
+.stl{font-size:.6rem;color:#aaa;text-transform:uppercase;letter-spacing:.3px;font-weight:600;}
+.stv{font-size:.95rem;font-weight:700;color:#1a1a1a;}
+.stv.lg{font-size:1.15rem;}
+.chip{display:inline-block;font-size:.61rem;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px;}
+.cr{background:#fee2e2;color:#991b1b;}
+.cg{background:#dcfce7;color:#166534;}
+.co{background:#fef3c7;color:#92400e;}
+.cn{background:#f3f4f6;color:#6b7280;}
+.mb3{height:4px;border-radius:3px;background:#f0ece4;overflow:hidden;}
+.mbf{height:100%;border-radius:3px;transition:width .45s;}
+.mir{display:flex;align-items:center;gap:6px;}
+.mir label{font-size:.62rem;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+.ni2{width:58px;text-align:center;border:1.5px solid #e8e2d6;border-radius:7px;padding:5px 6px;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;color:#1a1a1a;background:#f5f0e8;outline:none;}
+.ni2:focus{border-color:#8b5cf6;background:#fff;}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
+.ab{width:26px;height:26px;border-radius:6px;border:1.5px solid #e8e2d6;background:#f5f0e8;color:#1a1a1a;font-size:.92rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .13s;line-height:1;}
+.ab:hover{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+/* BUTTONS */
+.sbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.bp{background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:600;letter-spacing:.3px;cursor:pointer;transition:all .18s;}
+.bp:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.18);}
+.bs{background:transparent;color:#1a1a1a;border:1.5px solid #e8e2d6;border-radius:8px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .13s;}
+.bs:hover{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.smsg{font-size:.75rem;color:#22c55e;font-weight:600;opacity:0;transition:opacity .28s;}
+.smsg.show{opacity:1;}
+/* BOOKLET */
+.bktabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.bkt{padding:7px 15px;border-radius:20px;border:1.5px solid #e8e2d6;background:transparent;font-size:.76rem;font-weight:600;color:#555;cursor:pointer;transition:all .13s;font-family:'Inter',sans-serif;}
+.bkt.act{background:#1a1a1a;color:#fff;border-color:#1a1a1a;}
+.bks{display:none;}
+.bks.act{display:block;}
+.tcard{background:#f5f0e8;border:1px solid #e8e2d6;border-radius:8px;padding:13px 15px;margin-bottom:10px;}
+.tcard h4{font-size:.78rem;font-weight:700;color:#1a1a1a;margin-bottom:6px;}
+.tcard pre{font-family:'Inter',sans-serif;font-size:.74rem;color:#555;white-space:pre-wrap;line-height:1.65;background:#fff;border-radius:7px;padding:11px;border:1px solid #e8e2d6;}
+.cbtn{font-size:.66rem;font-weight:700;padding:3px 10px;border-radius:6px;background:#1a1a1a;color:#fff;border:none;cursor:pointer;margin-top:6px;font-family:'Inter',sans-serif;}
+.cbtn:hover{opacity:.8;}
+.srow{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid #e8e2d6;align-items:flex-start;}
+.srow:last-child{border-bottom:none;}
+.snum{width:25px;height:25px;border-radius:50%;background:#1a1a1a;color:#fff;font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.sc h5{font-size:.8rem;font-weight:600;color:#1a1a1a;margin-bottom:2px;}
+.sc p{font-size:.75rem;color:#555;line-height:1.55;}
+.nf{margin-bottom:8px;}
+.nf label{font-size:.62rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:3px;}
+.nf textarea{width:100%;min-height:50px;resize:vertical;border:1.5px solid #e8e2d6;border-radius:7px;padding:7px 10px;font-family:'Inter',sans-serif;font-size:.76rem;color:#1a1a1a;background:#f5f0e8;outline:none;line-height:1.45;}
+.nf textarea:focus{border-color:#8b5cf6;background:#fff;}
+.nf input[type=text]{width:100%;border:1.5px solid #e8e2d6;border-radius:7px;padding:6px 10px;font-family:'Inter',sans-serif;font-size:.76rem;color:#1a1a1a;background:#f5f0e8;outline:none;}
+.nf input[type=text]:focus{border-color:#8b5cf6;background:#fff;}
+/* STRAT */
+.shdr{background:#1a1a1a;border-radius:14px;padding:18px 22px;margin-bottom:14px;color:#fff;}
+.shdr h2{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;}
+.shdr p{font-size:.74rem;color:rgba(255,255,255,.38);margin-top:3px;}
+.scrd{background:#fff;border:1px solid #e8e2d6;border-radius:13px;padding:15px 18px;box-shadow:0 1px 5px rgba(0,0,0,.04);margin-bottom:11px;}
+.sch{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+.sch h3{font-family:'Syne',sans-serif;font-size:.86rem;font-weight:700;color:#1a1a1a;}
+.gbadge{font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:20px;}
+.srt{display:flex;gap:7px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #e8e2d6;}
+.srt:last-child{border-bottom:none;padding-bottom:0;}
+.sic{width:20px;height:20px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;}
+.stxt{font-size:.76rem;color:#555;line-height:1.45;flex:1;}
+.stxt strong{color:#1a1a1a;}
+.rp{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:.68rem;font-weight:600;margin:2px 2px 0 0;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.mleg{display:flex;flex-direction:column;gap:5px;}
+.mlr{display:flex;align-items:center;gap:6px;font-size:.71rem;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sb" id="sb">
+  <div class="sb-logo">
+    <div class="lm">OPS</div>
+    <div class="lt">Operations</div>
+  </div>
+  <div class="ss">Main</div>
+  <button class="ni act" onclick="goTo('home',this)"><span class="ni-ic">&#9632;</span><span class="ni-lb">OPS Overview</span></button>
+  <button class="ni" onclick="goTo('metrics',this)"><span class="ni-ic">&#9711;</span><span class="ni-lb">Metric Board</span></button>
+  <button class="ni" onclick="goTo('booklet',this)"><span class="ni-ic">&#9776;</span><span class="ni-lb">Booklet</span></button>
+  <button class="ni" onclick="goTo('strat',this)"><span class="ni-ic">&#9650;</span><span class="ni-lb">Strat Planner</span></button>
+  <div class="ss">System</div>
+  <button class="ni" onclick="alert('Coming soon.')"><span class="ni-ic">&#9881;</span><span class="ni-lb">Settings</span></button>
+  <div class="sf">
+    <button class="tgl" onclick="toggleSB()"><span class="ni-ic" id="tic">&#8249;</span><span class="ni-lb">Collapse</span></button>
+  </div>
+</nav>
+
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-l">
+      <h1>Operations Dashboard</h1>
+      <p>Operations and Growth Coordinator &middot; Duff Rose T.</p>
+    </div>
+    <div class="tb-r">
+      <div><div class="clk" id="clk">--:--</div><div class="dts" id="dts">Loading...</div></div>
+      <div class="av">DR</div>
+    </div>
+  </div>
+
+  <!-- PAGE: HOME -->
+  <div class="pg act" id="pg-home">
+    <div class="gr-strip">
+      <div class="gr-l">
+        <h2 id="gr-h">Good morning, Duff Rose T.</h2>
+        <p id="gr-s">Here is your overview for today.</p>
+      </div>
+      <div class="wb" id="wbadge">Week &mdash;</div>
+    </div>
+    <div class="qcard"><div class="qbar"></div><div><div class="qt" id="qt"></div><div class="qa" id="qa"></div></div></div>
+    <div class="g4" id="kpitiles"></div>
+    <div class="dw">
+      <div class="dcrd">
+        <div class="dt2">
+          <div class="ct" style="margin:0;">KPI Progress</div>
+          <div class="vt">
+            <button class="vb act" id="vba" onclick="setV('all')">All KPIs</button>
+            <button class="vb" id="vbs" onclick="setV('single')">Per KPI</button>
+          </div>
+        </div>
+        <div id="va">
+          <div class="ca"><canvas id="dall"></canvas><div class="cc"><div class="cp" id="cpall">0%</div><div class="cl2">Overall</div></div></div>
+          <div class="pills" id="pall"></div>
+        </div>
+        <div id="vs" style="display:none;">
+          <div class="pills" id="psingle" style="margin-bottom:10px;"></div>
+          <div class="ca"><canvas id="dsingle"></canvas><div class="cc"><div class="cp" id="spp">0%</div><div class="cl2" id="slb">Select KPI</div></div></div>
+          <div class="sst">
+            <div class="ss2"><div class="sl2">Monthly Goal</div><div class="sv" id="smg">-</div></div>
+            <div class="ss2"><div class="sl2">Daily Target</div><div class="sv" id="sdt">-</div></div>
+            <div class="ss2"><div class="sl2">Actual</div><div class="sv" id="sac">-</div></div>
+            <div class="ss2"><div class="sl2">% Complete</div><div class="sv" id="spc">-</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="eow-crd">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+          <div class="ct" style="margin:0;">EOW Report</div>
+          <button class="bs" style="font-size:.7rem;padding:5px 12px;" onclick="copyEOW()">Copy</button>
+        </div>
+        <div class="eg" id="eow-home"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Today's Priorities</div>
+      <div class="prilist">
+        <div class="pri"><div class="pdot2" style="background:#ef4444"></div><div class="pl">Reach out to inactive agents first - warmth over volume</div><div class="pbadge" style="background:#fee2e2;color:#991b1b;">High</div></div>
+        <div class="pri"><div class="pdot2" style="background:#8b5cf6"></div><div class="pl">Hit 10 outreach calls - slow down, smile, let them talk</div><div class="pbadge" style="background:#ede9fe;color:#5b21b6;">High</div></div>
+        <div class="pri"><div class="pdot2" style="background:#6366f1"></div><div class="pl">Log 4 CRM updates before end of day</div><div class="pbadge" style="background:#e0e7ff;color:#3730a3;">Medium</div></div>
+        <div class="pri"><div class="pdot2" style="background:#f97316"></div><div class="pl">Post 1-2 value-add content pieces on Facebook</div><div class="pbadge" style="background:#ffedd5;color:#9a3412;">Medium</div></div>
+        <div class="pri"><div class="pdot2" style="background:#3b82f6"></div><div class="pl">Send 4 follow-up emails or texts from previous calls</div><div class="pbadge" style="background:#dbeafe;color:#1e40af;">Medium</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: METRICS -->
+  <div class="pg" id="pg-metrics">
+    <div class="sec-t">Metric Board</div>
+    <div class="sec-s">Enter today's numbers. Data saves to browser and updates all charts automatically.</div>
+    <div class="sbar">
+      <button class="bp" onclick="saveEOD()">Save EOD Data</button>
+      <button class="bs" onclick="resetAll()">Reset All</button>
+      <span class="smsg" id="smsg">Saved successfully</span>
+      <span style="font-size:.7rem;color:#aaa;" id="lsl"></span>
+    </div>
+    <div class="mg" id="mg"></div>
+    <div class="g2">
+      <div class="card">
+        <div class="ct">Monthly Progress Overview</div>
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+          <div style="position:relative;width:140px;height:140px;flex-shrink:0;"><canvas id="dm"></canvas><div class="cc"><div class="cp" id="mop">0%</div><div class="cl2">Overall</div></div></div>
+          <div class="mleg" id="mleg"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+          <div class="ct" style="margin:0;">EOW Report</div>
+          <button class="bs" style="font-size:.7rem;padding:5px 12px;" onclick="copyEOW()">Copy</button>
+        </div>
+        <div class="eg" id="eow-metrics"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: BOOKLET -->
+  <div class="pg" id="pg-booklet">
+    <div class="sec-t">Booklet</div>
+    <div class="sec-s">SOPs, templates, call scripts, and note formats.</div>
+    <div class="bktabs">
+      <button class="bkt act" onclick="swBK('sop',this)">SOP</button>
+      <button class="bkt" onclick="swBK('sms',this)">SMS Templates</button>
+      <button class="bkt" onclick="swBK('email',this)">Email Templates</button>
+      <button class="bkt" onclick="swBK('scripts',this)">Call Scripts</button>
+      <button class="bkt" onclick="swBK('notes',this)">Note Template</button>
+    </div>
+    <div class="bks act" id="bk-sop">
+      <div class="card">
+        <div class="ct">Daily Standard Operating Procedure</div>
+        <div class="srow"><div class="snum">1</div><div class="sc"><h5>Morning CRM Review</h5><p>Open CRM. Flag agents inactive 30+ days. Tag them Outreach Today. Pull your 10-call list before 9 AM.</p></div></div>
+        <div class="srow"><div class="snum">2</div><div class="sc"><h5>10 Outreach Calls</h5><p>Lead with inactive agents. Slow down. Smile before you dial. Let them talk 70% of the call. No pitch - curiosity only.</p></div></div>
+        <div class="srow"><div class="snum">3</div><div class="sc"><h5>Log Every Conversation</h5><p>Within 30 minutes of each call. Note tone, follow-up needed, next step. Update tag in CRM immediately.</p></div></div>
+        <div class="srow"><div class="snum">4</div><div class="sc"><h5>Facebook Posts (1-2)</h5><p>Post value-add content. Market updates, agent tips. No direct sales language. Engagement over reach.</p></div></div>
+        <div class="srow"><div class="snum">5</div><div class="sc"><h5>4 Follow-Up Emails or Texts</h5><p>From previous calls. Short, warm, no pressure. Reference something personal they mentioned.</p></div></div>
+        <div class="srow"><div class="snum">6</div><div class="sc"><h5>4 CRM Updates</h5><p>Dedupe, update tags, add notes. Keep it simple and clean. One record per agent.</p></div></div>
+        <div class="srow"><div class="snum">7</div><div class="sc"><h5>EOD Data Entry</h5><p>Open Metric Board. Enter today's actuals. Click Save EOD Data. Done.</p></div></div>
+      </div>
+    </div>
+    <div class="bks" id="bk-sms">
+      <div class="tcard"><h4>Re-Engagement - Inactive Agent</h4><pre>Hi [Name], this is Duff Rose from [Company]. It has been a while and I just wanted to reach out and see how things are going. No agenda - just checking in. Hope all is well!</pre><button class="cbtn" onclick="cpTpl(this)">Copy</button></div>
+      <div class="tcard"><h4>After First Call - Warm Follow-Up</h4><pre>Hi [Name]! Great connecting with you today. I will send over what we talked about shortly. Let me know if you need anything - always here to help.</pre><button class="cbtn" onclick="cpTpl(this)">Copy</button></div>
+      <div class="tcard"><h4>Meeting Confirmation</h4><pre>Hi [Name], confirming our call on [Date] at [Time]. Looking forward to connecting! Feel free to text back if you need to reschedule.</pre><button class="cbtn" onclick="cpTpl(this)">Copy</button></div>
+      <div class="tcard"><h4>No Answer - Follow-Up Text</h4><pre>Hi [Name], I just left you a voicemail. No rush - just wanted to connect. Feel free to text back whenever works for you!</pre><button class="cbtn" onclick="cpTpl(this)">Copy</button></div>
+    </div>
+    <div class="bks" id="bk-email">
+      <div class="tcard"><h4>Re-Engagement Email</h4><pre>Subject: Just Checking In, [Name]
+
+Hi [Name],
+
+Hope you are doing well! I wanted to reach out personally - it has been a while and I wanted to see how your business is going.
+
+We have been working on some resources and support for our agents and I thought of you. No pressure at all - I just want to make sure you know the door is always open.
+
+Would love to reconnect at your convenience. A quick 15-minute call would be great.
+
+Warmly,
+Duff Rose T.
+Operations and Growth Coordinator</pre><button class="cbtn" onclick="cpTpl(this)">Copy</button></div>
+      <div class="tcard"><h4>Post-Meeting Recap</h4><pre>Subject: Great Connecting, [Name]!
+
+Hi [Name],
+
+Thank you so much for your time today. It was genuinely great to connect and hear what is going on in your world.
+
+As promised, here is a quick recap of what we covered:
+[Summary of meeting]
+
+Next step: [Action item or follow-up date]
+
+Please do not hesitate to reach out anytime.
+
+Best,
+Duff Rose T.</pre><button class="cbtn" onclick="cpTpl(this)">Copy</button></div>
+    </div>
+    <div class="bks" id="bk-scripts">
+      <div class="tcard"><h4>Opening - Inactive Agent Outreach</h4><pre>Opening: "Hi [Name], this is Duff Rose calling from [Company]. How are you doing today?"
+[Listen. Let them respond fully.]
+
+Bridge: "I am reaching out because I noticed we have not connected in a while - no agenda, just wanted to see how things are going."
+[Listen. Reflect back what they share.]
+
+Discovery: "Are you still active in real estate right now, or has your focus shifted?"
+[Listen. Affirm their answer.]
+
+Soft Close: "I would love to set up a quick 15-minute call to reconnect. Would that work?"
+
+Close: "Perfect. I will send you a confirmation. Talk soon!"</pre><button class="cbtn" onclick="cpTpl(this)">Copy</button></div>
+      <div class="tcard"><h4>Voicemail Script</h4><pre>"Hi [Name], this is Duff Rose from [Company]. I just wanted to reach out and say hello - it has been a while and I was thinking about you. No rush at all, but if you get a chance give me a call back at [Number] or just shoot me a text. Hope you are doing great. Talk soon!"</pre><button class="cbtn" onclick="cpTpl(this)">Copy</button></div>
+    </div>
+    <div class="bks" id="bk-notes">
+      <div class="card">
+        <div class="ct">CRM Note Template - Fill and Copy to GHL</div>
+        <div class="nf"><label>Agent Name</label><input type="text" id="nn" placeholder="e.g. John Smith"/></div>
+        <div class="nf"><label>Date of Contact</label><input type="text" id="nd" placeholder="e.g. June 15, 2025"/></div>
+        <div class="nf"><label>Contact Method</label><input type="text" id="nm" placeholder="e.g. Phone Call, SMS, Email"/></div>
+        <div class="nf"><label>Tone / Energy</label><input type="text" id="nto" placeholder="e.g. Warm, Neutral, Hesitant, Excited"/></div>
+        <div class="nf"><label>Summary</label><textarea id="nsu" placeholder="What was discussed? Key points..."></textarea></div>
+        <div class="nf"><label>Follow-Up Needed</label><textarea id="nfu" placeholder="What is the next action? When?"></textarea></div>
+        <div class="nf"><label>CRM Tag Update</label><input type="text" id="ntag" placeholder="e.g. Active, Warm, Meeting Scheduled"/></div>
+        <button class="bp" style="margin-top:6px;" onclick="cpNote()">Copy Note to Clipboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: STRAT -->
+  <div class="pg" id="pg-strat">
+    <div class="sec-t">Strat Planner</div>
+    <div class="sec-s">Data-driven recovery recommendations based on your saved metric data.</div>
+    <div class="shdr"><h2>Strategic Recovery Report</h2><p id="swl">Generating from saved data...</p></div>
+    <div id="scards"></div>
+    <div class="card"><div class="ct">Recovery Focus Areas</div><div id="ract" style="padding-top:4px;"></div></div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+var METRICS = [
+  {id:'calls',     name:'Outreach Calls',        color:'#8b5cf6', monthly:300, daily:'10',  yearly:3600},
+  {id:'convos',    name:'Conversations',          color:'#ec4899', monthly:75,  daily:'3',   yearly:1000},
+  {id:'fb',        name:'Facebook Posts',         color:'#f97316', monthly:40,  daily:'1-2', yearly:200},
+  {id:'sched',     name:'Meetings Scheduled',     color:'#14b8a6', monthly:8,   daily:'0-1', yearly:100},
+  {id:'completed', name:'Meetings Completed',     color:'#22c55e', monthly:6,   daily:'0-1', yearly:75},
+  {id:'inactive',  name:'Inactive Agents',        color:'#ef4444', monthly:25,  daily:'1',   yearly:300},
+  {id:'followup',  name:'Follow-Ups',             color:'#3b82f6', monthly:100, daily:'4',   yearly:1200},
+  {id:'crm',       name:'CRM Updates',            color:'#6366f1', monthly:100, daily:'4',   yearly:1200}
+];
+var QUOTES = [
+  {t:'Small daily improvements over time lead to stunning results.',a:'Robin Sharma'},
+  {t:'Consistency is the true foundation of trust.',a:'Roy T. Bennett'},
+  {t:'You do not have to be great to start, but you have to start to be great.',a:'Zig Ziglar'},
+  {t:'Success is the sum of small efforts repeated day in and day out.',a:'Robert Collier'},
+  {t:'The secret of getting ahead is getting started.',a:'Mark Twain'},
+  {t:'Do not watch the clock; do what it does. Keep going.',a:'Sam Levenson'},
+  {t:'Every call is an opportunity to make someone feel valued.',a:'Unknown'},
+  {t:'Momentum is built by showing up even on the slow days.',a:'Unknown'},
+  {t:'People do not care how much you know until they know how much you care.',a:'Roosevelt'},
+  {t:'Clarity comes from action, not thought.',a:'Marie Forleo'},
+  {t:'Relationships are built one conversation at a time.',a:'Unknown'},
+  {t:'You are closer than you think. Keep going.',a:'Unknown'}
+];
+
+// ── STORAGE ──────────────────────────────────────────
+function getActuals() {
+  try { return JSON.parse(localStorage.getItem('ops_dash') || '{}'); } catch(e) { return {}; }
+}
+function saveActuals(d) {
+  localStorage.setItem('ops_dash', JSON.stringify(d));
+  localStorage.setItem('ops_dash_ts', new Date().toISOString());
+}
+
+// ── HELPERS ──────────────────────────────────────────
+function getPct(m, d) {
+  return Math.min(100, Math.round(((d[m.id] || 0) / m.monthly) * 100));
+}
+function getStatus(p) {
+  if (p === 0)   return {lb:'No Data',   c:'cn', bc:'#d1d5db'};
+  if (p >= 100)  return {lb:'Above Goal',c:'co', bc:'#f59e0b'};
+  if (p >= 70)   return {lb:'On Track',  c:'cg', bc:'#22c55e'};
+  return               {lb:'Below Goal',c:'cr', bc:'#ef4444'};
+}
+
+// ── CLOCK ────────────────────────────────────────────
+function tick() {
+  var n = new Date();
+  var el = document.getElementById('clk');
+  if (el) el.textContent = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  var de = document.getElementById('dts');
+  if (de) de.textContent = n.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+  var start = new Date(n.getFullYear(), 0, 1);
+  var wn = Math.ceil((((n - start) / 86400000) + start.getDay() + 1) / 7);
+  var mon = n.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+  var wb = document.getElementById('wbadge');
+  if (wb) wb.textContent = 'Week ' + wn + ' · ' + mon;
+  var sw = document.getElementById('swl');
+  if (sw) sw.textContent = 'Week ' + wn + ' · ' + mon;
+}
+tick();
+setInterval(tick, 30000);
+
+// ── QUOTE ────────────────────────────────────────────
+function setQuote() {
+  var q = QUOTES[new Date().getDate() % QUOTES.length];
+  var qt = document.getElementById('qt');
+  var qa = document.getElementById('qa');
+  if (qt) qt.textContent = '"' + q.t + '"';
+  if (qa) qa.textContent = '— ' + q.a;
+  var h = new Date().getHours();
+  var greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  var gh = document.getElementById('gr-h');
+  if (gh) gh.textContent = greet + ', Duff Rose T.';
+  var gs = document.getElementById('gr-s');
+  if (gs) gs.textContent = h < 12 ? 'Start strong. Here is your overview for today.' : h < 17 ? 'Keep the momentum going.' : 'End strong. Almost there.';
+}
+setQuote();
+
+// ── NAVIGATION ──────────────────────────────────────
+function goTo(page, btn) {
+  var pages = document.querySelectorAll('.pg');
+  for (var i = 0; i < pages.length; i++) pages[i].classList.remove('act');
+  var navItems = document.querySelectorAll('.ni');
+  for (var i = 0; i < navItems.length; i++) navItems[i].classList.remove('act');
+  var pg = document.getElementById('pg-' + page);
+  if (pg) pg.classList.add('act');
+  if (btn) btn.classList.add('act');
+  if (page === 'strat') buildStrat();
+}
+function toggleSB() {
+  var s = document.getElementById('sb');
+  s.classList.toggle('col');
+  var ic = document.getElementById('tic');
+  if (ic) ic.innerHTML = s.classList.contains('col') ? '&#8250;' : '&#8249;';
+}
+
+// ── BOOKLET ──────────────────────────────────────────
+function swBK(id, btn) {
+  var secs = document.querySelectorAll('.bks');
+  for (var i = 0; i < secs.length; i++) secs[i].classList.remove('act');
+  var tabs = document.querySelectorAll('.bkt');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('act');
+  var sec = document.getElementById('bk-' + id);
+  if (sec) sec.classList.add('act');
+  btn.classList.add('act');
+}
+function cpTpl(btn) {
+  var pre = btn.previousElementSibling;
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.textContent).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = orig; }, 1400);
+  });
+}
+function cpNote() {
+  var f = function(id) { var e = document.getElementById(id); return e ? (e.value || '-') : '-'; };
+  var t = 'Agent: ' + f('nn') + '\n\nDate: ' + f('nd') + '\n\nMethod: ' + f('nm') + '\n\nTone: ' + f('nto') + '\n\nSummary:\n' + f('nsu') + '\n\nFollow-Up:\n' + f('nfu') + '\n\nCRM Tag: ' + f('ntag');
+  navigator.clipboard.writeText(t).then(function() { alert('Note copied to clipboard!'); });
+}
+
+// ── METRIC BOARD ─────────────────────────────────────
+function buildMetricGrid() {
+  var grid = document.getElementById('mg');
+  if (!grid) return;
+  var d = getActuals();
+  grid.innerHTML = '';
+  METRICS.forEach(function(m) {
+    var a = d[m.id] || 0;
+    var p = getPct(m, d);
+    var s = getStatus(p);
+    var div = document.createElement('div');
+    div.className = 'mbox';
+    div.innerHTML =
+      '<div class="mt2">' +
+        '<div style="display:flex;align-items:center;gap:7px;">' +
+          '<div class="mcb" style="background:' + m.color + '"></div>' +
+          '<div class="mn">' + m.name + '</div>' +
+        '</div>' +
+        '<span class="chip ' + s.c + '">' + s.lb + '</span>' +
+      '</div>' +
+      '<div class="msr">' +
+        '<div><div class="stl">Goal</div><div class="stv">' + m.monthly + '</div></div>' +
+        '<div><div class="stl">Daily</div><div class="stv">' + m.daily + '</div></div>' +
+        '<div><div class="stl">Progress</div><div class="stv lg" id="mp-' + m.id + '" style="color:' + s.bc + '">' + p + '%</div></div>' +
+        '<div><div class="stl">Actual</div><div class="stv" id="ma-' + m.id + '">' + a + '</div></div>' +
+      '</div>' +
+      '<div class="mb3"><div class="mbf" id="mb-' + m.id + '" style="width:' + p + '%;background:' + s.bc + '"></div></div>' +
+      '<div class="mir">' +
+        '<label>Today</label>' +
+        '<button class="ab" onclick="adj(\'' + m.id + '\',-1)">-</button>' +
+        '<input class="ni2" type="number" id="inp-' + m.id + '" value="' + a + '" min="0" oninput="liveUpdate(\'' + m.id + '\')" />' +
+        '<button class="ab" onclick="adj(\'' + m.id + '\',1)">+</button>' +
+      '</div>';
+    grid.appendChild(div);
+  });
+}
+function adj(id, delta) {
+  var inp = document.getElementById('inp-' + id);
+  if (!inp) return;
+  inp.value = Math.max(0, (parseInt(inp.value) || 0) + delta);
+  liveUpdate(id);
+}
+function liveUpdate(id) {
+  var inp = document.getElementById('inp-' + id);
+  if (!inp) return;
+  var val = Math.max(0, parseInt(inp.value) || 0);
+  inp.value = val;
+  var m = null;
+  for (var i = 0; i < METRICS.length; i++) { if (METRICS[i].id === id) { m = METRICS[i]; break; } }
+  if (!m) return;
+  var p = Math.min(100, Math.round((val / m.monthly) * 100));
+  var s = getStatus(p);
+  var pe = document.getElementById('mp-' + id);
+  var ae = document.getElementById('ma-' + id);
+  var be = document.getElementById('mb-' + id);
+  if (pe) { pe.textContent = p + '%'; pe.style.color = s.bc; }
+  if (ae) ae.textContent = val;
+  if (be) { be.style.width = p + '%'; be.style.background = s.bc; }
+}
+function saveEOD() {
+  var d = {};
+  METRICS.forEach(function(m) {
+    var inp = document.getElementById('inp-' + m.id);
+    d[m.id] = inp ? Math.max(0, parseInt(inp.value) || 0) : 0;
+  });
+  saveActuals(d);
+  updateAllCharts();
+  buildKPITiles();
+  genEOW();
+  var msg = document.getElementById('smsg');
+  if (msg) { msg.classList.add('show'); setTimeout(function() { msg.classList.remove('show'); }, 2200); }
+  var ls = document.getElementById('lsl');
+  if (ls) ls.textContent = 'Last saved: ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+function resetAll() {
+  if (!confirm('Reset all metric data?')) return;
+  localStorage.removeItem('ops_dash');
+  localStorage.removeItem('ops_dash_ts');
+  buildMetricGrid();
+  updateAllCharts();
+  buildKPITiles();
+  genEOW();
+  var ls = document.getElementById('lsl');
+  if (ls) ls.textContent = '';
+}
+
+// ── CHARTS ──────────────────────────────────────────
+var chartAll = null, chartSingle = null, chartMetric = null;
+var activeSingleId = METRICS[0].id;
+var activeView = 'all';
+
+function buildChartAll() {
+  var ctx = document.getElementById('dall');
+  if (!ctx) return;
+  var d = getActuals();
+  var vals = METRICS.map(function(m) { var p = getPct(m,d); return p === 0 ? 0.5 : p; });
+  var cols = METRICS.map(function(m) { return m.color; });
+  if (chartAll) chartAll.destroy();
+  chartAll = new Chart(ctx, {
+    type: 'doughnut',
+    data: { datasets: [{ data: vals, backgroundColor: cols, borderWidth: 2, borderColor: '#fff', borderRadius: 3 }] },
+    options: { cutout: '72%', plugins: { legend: {display:false}, tooltip: {enabled:false} }, animation: {duration:500}, events: [] }
+  });
+  var avg = Math.round(METRICS.reduce(function(s,m) { return s + getPct(m,d); }, 0) / METRICS.length);
+  var el = document.getElementById('cpall');
+  if (el) el.textContent = avg + '%';
+}
+
+function buildChartSingle(id) {
+  var ctx = document.getElementById('dsingle');
+  if (!ctx) return;
+  var m = null;
+  for (var i = 0; i < METRICS.length; i++) { if (METRICS[i].id === id) { m = METRICS[i]; break; } }
+  if (!m) return;
+  var d = getActuals();
+  var p = getPct(m, d);
+  var fill = p === 0 ? 1 : p;
+  var s = getStatus(p);
+  if (chartSingle) chartSingle.destroy();
+  chartSingle = new Chart(ctx, {
+    type: 'doughnut',
+    data: { datasets: [{ data: [fill, 100-fill], backgroundColor: [s.bc, '#f0ece4'], borderWidth: 0, borderRadius: 4 }] },
+    options: { cutout: '72%', plugins: { legend: {display:false}, tooltip: {enabled:false} }, animation: {duration:400}, events: [] }
+  });
+  var sp = document.getElementById('spp');
+  var sl = document.getElementById('slb');
+  if (sp) sp.textContent = p + '%';
+  if (sl) sl.textContent = m.name;
+  var a = d[id] || 0;
+  var set = function(eid, v) { var e = document.getElementById(eid); if (e) e.textContent = v; };
+  set('smg', m.monthly); set('sdt', m.daily); set('sac', a); set('spc', p + '%');
+}
+
+function buildChartMetric() {
+  var ctx = document.getElementById('dm');
+  if (!ctx) return;
+  var d = getActuals();
+  var vals = METRICS.map(function(m) { var p = getPct(m,d); return p === 0 ? 0.5 : p; });
+  var cols = METRICS.map(function(m) { return m.color; });
+  if (chartMetric) chartMetric.destroy();
+  chartMetric = new Chart(ctx, {
+    type: 'doughnut',
+    data: { datasets: [{ data: vals, backgroundColor: cols, borderWidth: 2, borderColor: '#fff', borderRadius: 3 }] },
+    options: { cutout: '72%', plugins: { legend: {display:false}, tooltip: {enabled:false} }, animation: {duration:500}, events: [] }
+  });
+  var avg = Math.round(METRICS.reduce(function(s,m) { return s + getPct(m,d); }, 0) / METRICS.length);
+  var op = document.getElementById('mop');
+  if (op) op.textContent = avg + '%';
+  var leg = document.getElementById('mleg');
+  if (!leg) return;
+  leg.innerHTML = '';
+  METRICS.forEach(function(m) {
+    var p = getPct(m, d);
+    var s = getStatus(p);
+    var r = document.createElement('div');
+    r.className = 'mlr';
+    r.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:' + m.color + ';flex-shrink:0;"></span>' +
+      '<span style="flex:1;font-size:.7rem;color:#555;">' + m.name + '</span>' +
+      '<span class="chip ' + s.c + '" style="font-size:.59rem;">' + p + '%</span>';
+    leg.appendChild(r);
+  });
+}
+
+function setV(v) {
+  activeView = v;
+  var va = document.getElementById('va');
+  var vs = document.getElementById('vs');
+  if (va) va.style.display = v === 'all' ? 'block' : 'none';
+  if (vs) vs.style.display = v === 'single' ? 'block' : 'none';
+  var vba = document.getElementById('vba');
+  var vbs = document.getElementById('vbs');
+  if (vba) vba.classList.toggle('act', v === 'all');
+  if (vbs) vbs.classList.toggle('act', v === 'single');
+  if (v === 'single') buildChartSingle(activeSingleId);
+  else buildChartAll();
+}
+
+function buildPillsAll() {
+  var w = document.getElementById('pall');
+  if (!w) return;
+  w.innerHTML = '';
+  METRICS.forEach(function(m) {
+    var btn = document.createElement('button');
+    btn.className = 'pill';
+    btn.style.cssText = 'border-color:' + m.color + ';background:' + m.color + ';color:#fff;';
+    btn.innerHTML = '<span class="pdot" style="background:rgba(255,255,255,.7)"></span>' + m.name;
+    w.appendChild(btn);
+  });
+}
+
+function buildPillsSingle() {
+  var w = document.getElementById('psingle');
+  if (!w) return;
+  w.innerHTML = '';
+  METRICS.forEach(function(m) {
+    var btn = document.createElement('button');
+    var isAct = m.id === activeSingleId;
+    btn.className = 'pill';
+    if (isAct) {
+      btn.style.cssText = 'border-color:' + m.color + ';background:' + m.color + ';color:#fff;';
+    } else {
+      btn.style.cssText = 'border-color:' + m.color + ';color:' + m.color + ';';
+    }
+    btn.innerHTML = '<span class="pdot" style="background:' + m.color + '"></span>' + m.name;
+    (function(mid, mc) {
+      btn.onclick = function() {
+        activeSingleId = mid;
+        buildPillsSingle();
+        buildChartSingle(mid);
+      };
+    })(m.id, m.color);
+    w.appendChild(btn);
+  });
+}
+
+function buildKPITiles() {
+  var d = getActuals();
+  var w = document.getElementById('kpitiles');
+  if (!w) return;
+  w.innerHTML = '';
+  var show = [METRICS[0], METRICS[1], METRICS[4], METRICS[5]];
+  show.forEach(function(m) {
+    var a = d[m.id] || 0;
+    var p = getPct(m, d);
+    var s = getStatus(p);
+    var t = document.createElement('div');
+    t.className = 'kpit';
+    t.style.borderTop = '3px solid ' + m.color;
+    t.innerHTML = '<div class="kl">' + m.name + '</div>' +
+      '<div class="kv" style="color:' + m.color + '">' + a + '</div>' +
+      '<div class="ks">Goal: ' + m.monthly + ' &middot; ' + p + '%</div>' +
+      '<div class="kb"><div class="kbf" style="width:' + p + '%;background:' + s.bc + '"></div></div>';
+    w.appendChild(t);
+  });
+}
+
+function updateAllCharts() {
+  buildChartAll();
+  buildChartMetric();
+  if (activeView === 'single') buildChartSingle(activeSingleId);
+}
+
+// ── EOW REPORT ───────────────────────────────────────
+function genEOW() {
+  var d = getActuals();
+  var prog = [], wins = [], attn = [], prio = [];
+  METRICS.forEach(function(m) {
+    var a = d[m.id] || 0;
+    var p = getPct(m, d);
+    prog.push(m.name + ': ' + a + '/' + m.monthly + ' (' + p + '%)');
+    if (p >= 100) wins.push(m.name + ' exceeded goal at ' + p + '%');
+    else if (p >= 70) wins.push(m.name + ' on track at ' + p + '%');
+    if (a === 0) attn.push(m.name + ' - no data logged');
+    else if (p < 40) attn.push(m.name + ' at ' + p + '% - needs boost');
+  });
+  var sorted = METRICS.slice().sort(function(a,b) { return getPct(a,d) - getPct(b,d); });
+  sorted.slice(0,3).forEach(function(m) { prio.push('Prioritize ' + m.name); });
+
+  function render(gid) {
+    var g = document.getElementById(gid);
+    if (!g) return;
+    var wl = wins.length ? wins : ['Keep logging - first wins coming!'];
+    var al = attn.length ? attn : ['All tracked metrics on track.'];
+    g.innerHTML =
+      '<div class="eb" style="background:#fff7ed;border:1px solid #fed7aa;"><h4 style="color:#9a3412;">Progress</h4><ul>' + prog.slice(0,4).map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="eb" style="background:#f0fdf4;border:1px solid #bbf7d0;"><h4 style="color:#166534;">Wins</h4><ul>' + wl.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="eb" style="background:#fef2f2;border:1px solid #fecaca;"><h4 style="color:#991b1b;">Needs Attention</h4><ul>' + al.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="eb" style="background:#f5f3ff;border:1px solid #ddd6fe;"><h4 style="color:#5b21b6;">Next Week</h4><ul>' + prio.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul></div>';
+  }
+  render('eow-home');
+  render('eow-metrics');
+}
+
+function copyEOW() {
+  var d = getActuals();
+  var n = new Date();
+  var L = ['EOW REPORT - ' + n.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'}),
+    'Duff Rose T. | Operations and Growth Coordinator', ''];
+  L.push('PROGRESS');
+  METRICS.forEach(function(m) { var a = d[m.id]||0, p = getPct(m,d); L.push('  ' + m.name + ': ' + a + '/' + m.monthly + ' (' + p + '%)'); });
+  L.push('', 'WINS');
+  var hadWin = false;
+  METRICS.forEach(function(m) { var p = getPct(m,d); if (p >= 70) { L.push('  - ' + m.name + ' at ' + p + '%'); hadWin = true; } });
+  if (!hadWin) L.push('  - Keep logging!');
+  L.push('', 'NEEDS ATTENTION');
+  var hadAttn = false;
+  METRICS.forEach(function(m) { var a = d[m.id]||0, p = getPct(m,d); if (a===0) { L.push('  - ' + m.name + ': no data'); hadAttn = true; } else if (p<40) { L.push('  - ' + m.name + ': ' + p + '%'); hadAttn = true; } });
+  if (!hadAttn) L.push('  - All metrics on track.');
+  L.push('', 'NEXT WEEK');
+  var sorted = METRICS.slice().sort(function(a,b) { return getPct(a,d) - getPct(b,d); });
+  sorted.slice(0,3).forEach(function(m) { L.push('  - Increase ' + m.name); });
+  navigator.clipboard.writeText(L.join('\n')).then(function() { alert('EOW Report copied to clipboard!'); });
+}
+
+// ── STRAT PLANNER ────────────────────────────────────
+function buildStrat() {
+  var d = getActuals();
+  var c = document.getElementById('scards');
+  var r = document.getElementById('ract');
+  if (!c) return;
+  c.innerHTML = '';
+  METRICS.forEach(function(m) {
+    var a = d[m.id] || 0;
+    var p = getPct(m, d);
+    var rem = Math.max(0, m.monthly - a);
+    var dl = Math.max(1, 30 - new Date().getDate());
+    var npd = Math.ceil(rem / dl);
+    var bs, an, rc;
+    if (a === 0) {
+      bs = 'background:#fee2e2;color:#991b1b;';
+      an = 'No data logged yet for this metric.';
+      rc = 'Start logging daily to generate recovery recommendations.';
+    } else if (p >= 100) {
+      bs = 'background:#fef3c7;color:#92400e;';
+      an = m.name + ' has exceeded the monthly goal. Outstanding.';
+      rc = 'Maintain current pace. Consider stretching toward the yearly target.';
+    } else if (p >= 70) {
+      bs = 'background:#dcfce7;color:#166534;';
+      an = m.name + ' is on track. ' + rem + ' remaining to hit monthly goal.';
+      rc = 'Maintain ' + npd + '/day for the rest of the month to close out strong.';
+    } else {
+      var dt = parseInt(m.daily) || 1;
+      var gap = npd - dt;
+      bs = 'background:#fee2e2;color:#991b1b;';
+      an = m.name + ' is behind. You need ' + npd + '/day vs your standard ' + m.daily + '/day.';
+      rc = gap > 0
+        ? 'Increase daily output by ' + gap + ' - aim for ' + npd + ' per day for the next ' + dl + ' days.'
+        : 'Maintain standard daily pace - you are on pace to recover.';
+    }
+    var div = document.createElement('div');
+    div.className = 'scrd';
+    div.innerHTML =
+      '<div class="sch">' +
+        '<h3><span style="width:9px;height:9px;border-radius:50%;background:' + m.color + ';display:inline-block;margin-right:7px;vertical-align:middle;"></span>' + m.name + '</h3>' +
+        '<span class="gbadge" style="' + bs + '">' + p + '% - ' + a + '/' + m.monthly + '</span>' +
+      '</div>' +
+      '<div class="srt"><div class="sic" style="background:#f3f4f6;color:#555;">A</div><div class="stxt"><strong>Analysis:</strong> ' + an + '</div></div>' +
+      '<div class="srt"><div class="sic" style="background:#ede9fe;color:#7c3aed;">R</div><div class="stxt"><strong>Recommendation:</strong> ' + rc + '</div></div>';
+    c.appendChild(div);
+  });
+  if (!r) return;
+  r.innerHTML = '';
+  var behind = METRICS.filter(function(m) { return getPct(m,d) < 70 && (d[m.id]||0) > 0; });
+  var nodata = METRICS.filter(function(m) { return (d[m.id]||0) === 0; });
+  if (!behind.length && !nodata.length) {
+    r.innerHTML = '<p style="font-size:.8rem;color:#22c55e;font-weight:600;">All tracked metrics are on track. Keep it up.</p>';
+    return;
+  }
+  if (nodata.length) {
+    var div = document.createElement('div');
+    div.style.marginBottom = '8px';
+    div.innerHTML = '<div style="font-size:.68rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Start Logging</div>';
+    nodata.forEach(function(m) {
+      var s = document.createElement('span');
+      s.className = 'rp';
+      s.style.cssText = 'background:#fef2f2;border:1px solid #fecaca;color:#991b1b;';
+      s.textContent = 'Log ' + m.name;
+      div.appendChild(s);
+    });
+    r.appendChild(div);
+  }
+  if (behind.length) {
+    var div2 = document.createElement('div');
+    div2.innerHTML = '<div style="font-size:.68rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Recovery Focus</div>';
+    behind.forEach(function(m) {
+      var s = document.createElement('span');
+      s.className = 'rp';
+      s.style.cssText = 'background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;';
+      s.textContent = 'Boost ' + m.name;
+      div2.appendChild(s);
+    });
+    r.appendChild(div2);
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  buildMetricGrid();
+  buildKPITiles();
+  buildPillsAll();
+  buildPillsSingle();
+  buildChartAll();
+  buildChartSingle(activeSingleId);
+  buildChartMetric();
+  genEOW();
+  var ts = localStorage.getItem('ops_dash_ts');
+  if (ts) {
+    var el = document.getElementById('lsl');
+    if (el) el.textContent = 'Last saved: ' + new Date(ts).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+  }
+});
+</script>
+</body>
+</html>
